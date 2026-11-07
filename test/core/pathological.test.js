@@ -49,5 +49,18 @@ describe('Pathological tests', function () {
         yaml.load(createMergeChain(100000))
       }, /merge keys exceeded maxTotalMergeKeys/)
     })
+
+    it('throws YAMLException on a long sequence of empty merge sources', function () {
+      const n = 20000
+      const src = 'arr: &arr [' + '{},'.repeat(n).slice(0, -1) + ']\n' +
+        'targets:\n' + '  - <<: *arr\n'.repeat(n)
+      assertYamlException(function () { yaml.load(src) }, /abnormal merge sequence size/)
+    })
+
+    it('counts empty merge sources against maxTotalMergeKeys', function () {
+      const src = 'arr: &arr [' + '{},'.repeat(100).slice(0, -1) + ']\n' +
+        'targets:\n' + '  - <<: *arr\n'.repeat(200)
+      assertYamlException(function () { yaml.load(src) }, /merge keys exceeded maxTotalMergeKeys/)
+    })
   })
 })
