@@ -1,0 +1,29 @@
+schema: osera-patch-evidence/0.1.0
+producer: moderne
+release: 4.2.1-backpatch-00001
+baseline: v4.2.0+backpatch.baseline
+fixes:
+  - cve: CVE-2026-59869
+    upstream_fix_url: https://github.com/nodeca/js-yaml/commit/59423c6f8cdc78742ac00e25a4dd39ef16b702e4
+    advisory_url: https://nvd.nist.gov/vuln/detail/CVE-2026-59869
+    patch_commit_url: https://github.com/moderne-backpatch-alliance/backpatch-js-yaml/compare/6eb27ac~1...525c01f
+    basis: backport
+    artifacts:
+      - js-yaml
+    note: "New in this release; upstream's fix in 4.3.0 without its changelog entry, and with its README text placed by hand. As upstream does, this replaces the loader option maxMergeSeqLength with maxTotalMergeKeys (default 10000, -1 disables) and drops 4.2.0's dedupe of repeated merge sources. A maxMergeSeqLength a caller passes is now ignored. With CVE-2026-84375's fix in the same release, the budget charges each merge source as well as each key, again for each repeat of an alias, and one budget is shared across all documents of a loadAll, so a document can throw YAMLException where 4.2.0 loaded it with fewer than 10000 keys merged: 101 mappings merging a 99-key default do. The dedupe and limit this drops came in 4.2.0, the advisory's fixed version for CVE-2026-53550, repeated aliases on merge; such a sequence now throws once it passes the sequence cap or the budget, as the input of 4.2.0's dedupe test does, and 4.2.0's two tests of the dedupe and limit go, as upstream does."
+  - cve: CVE-2026-84375
+    upstream_fix_url: https://github.com/nodeca/js-yaml/commit/d90b6612a5a84385bdcb556c44578eac76dc0f6b
+    advisory_url: https://nvd.nist.gov/vuln/detail/CVE-2026-84375
+    patch_commit_url: https://github.com/moderne-backpatch-alliance/backpatch-js-yaml/compare/6eb27ac~1...525c01f
+    basis: backport
+    artifacts:
+      - js-yaml
+    note: "New in this release; upstream's fix in 4.3.2. As shipped, 4.2.0's limit of 20 rejects this CVE's input; the fix for CVE-2026-59869 removes that limit and reopens the input, which loaded in about 2.7 s with that fix alone, so both ship in one release and this CVE's input stays rejected. The advisory's range includes 4.2.0. A merge sequence over 100 now throws YAMLException, whatever maxTotalMergeKeys says; sequences of 21 to 100, which 4.2.0 rejected, now load within the maxTotalMergeKeys budget."
+tests:
+  commit: 525c01f76c8256cff5934add390add439d901b00
+  command: npm ci --ignore-scripts, npm run build, then node --test --test-reporter=junit test/core/*.test.* test/build/*.test.*, with the junit reporter's hostname attribute removed from the report
+  runtime: Node.js v22.16.0, npm 11.4.2, macOS 27.2 arm64
+  report: js-yaml-4.2.1-backpatch-00001-tests.zip
+  report_sha256: 3e543369cc5a4aacc823d0cd7d2b763d00cab5cbf9249e44caa038697a3cfd57
+  result: pass
+  note: "upstream's core and build suites at the tested commit, plus two tests of ours for CVE-2026-84375: 312 tests, 311 passed, 0 failed, and upstream's own skipped test, Recursive custom objects, which 4.2.0 skips too. With 4.2.0's code, upstream's merge chain test for CVE-2026-59869 runs out of heap and its two maxTotalMergeKeys tests fail. Our two tests, one with the input of upstream's v5 test and one of the same shape under the sequence cap, fail with CVE-2026-59869's fix alone. On 4.2.0's code they fail too, but only on the message, since 4.2.0 throws at its limit of 20. Built with vite at the tag in a directory named js-yaml, all 36 files match npmjs's 4.2.0 tarball, the dist files included. The core suite reaches index.js and lib/, the build suite only the exports of index.js and dist. The core tests also ran through the package's index.js, dist/js-yaml.js, dist/js-yaml.min.js and dist/js-yaml.mjs: 306 tests, 305 passed, 1 skipped on each; on npmjs's 4.2.0 each runs out of heap and fails the two maxTotalMergeKeys tests. The archive's file-origins.yaml maps each packaged file to the commit, or names its inputs and build."
