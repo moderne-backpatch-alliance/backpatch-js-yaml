@@ -31,6 +31,26 @@ function createMergeChain (count) {
 }
 
 describe('Pathological tests', function () {
+  describe('Ordered maps', function () {
+    it('loads a large !!omap in linear time', function () {
+      const n = 100000
+      const src = '!!omap\n' + Array.from({ length: n }, (_, i) => `- k${i}: ${i}\n`).join('')
+      const start = Date.now()
+      const result = yaml.load(src)
+      const elapsed = Date.now() - start
+
+      assert.strictEqual(result.length, n)
+      assert.deepStrictEqual(result[n - 1], { [`k${n - 1}`]: n - 1 })
+      assert(elapsed < 2000, `loading ${n} omap pairs took ${elapsed}ms`)
+    })
+
+    it('still rejects duplicate keys in !!omap', function () {
+      assertYamlException(function () {
+        yaml.load('!!omap\n- a: 1\n- b: 2\n- a: 3\n')
+      }, /cannot resolve a node with !<tag:yaml.org,2002:omap> explicit tag/)
+    })
+  })
+
   describe('Deep nesting', function () {
     it('throws YAMLException on deep array nesting (not stack overflow error)', function () {
       assertYamlException(function () { yaml.load('['.repeat(100000)) },
